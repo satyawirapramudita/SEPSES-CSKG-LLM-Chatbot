@@ -438,6 +438,18 @@ LIMIT {limit}
             Raw SPARQLWrapper JSON response dict, atau None jika gagal.
         """
         try:
+            import ssl
+            import urllib.request
+
+            # Bypass SSL verification (Anaconda di Windows sering punya masalah SSL cert)
+            ssl_ctx = ssl.create_default_context()
+            ssl_ctx.check_hostname = False
+            ssl_ctx.verify_mode = ssl.CERT_NONE
+            opener = urllib.request.build_opener(
+                urllib.request.HTTPSHandler(context=ssl_ctx)
+            )
+            urllib.request.install_opener(opener)  # global install untuk SPARQLWrapper
+
             wrapper = SPARQLWrapper(endpoint_url)
             wrapper.setQuery(sparql_str)
             wrapper.setReturnFormat(JSON)
@@ -449,7 +461,7 @@ LIMIT {limit}
             logger.warning("sparql_wrapper_error", endpoint=endpoint_url, error=str(exc))
             return None
         except Exception as exc:
-            logger.warning("endpoint_unavailable", endpoint=endpoint_url, error=str(exc))
+            logger.warning("endpoint_unavailable", endpoint=endpoint_url, error=str(exc)[:150])
             return None
 
     @staticmethod
