@@ -1,0 +1,154 @@
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+# ============================================================
+# SEPSES CSKG — Ontology Schema (Reference Copy)
+# Source: http://w3id.org/sepses/vocab/
+# Digunakan oleh: kg_engine/sparql_client.py
+# ============================================================
+
+# ── Namespace Declarations ─────────────────────────────────
+@prefix cve:   <http://w3id.org/sepses/vocab/ref/cve#> .
+@prefix cwe:   <http://w3id.org/sepses/vocab/ref/cwe#> .
+@prefix capec: <http://w3id.org/sepses/vocab/ref/capec#> .
+@prefix cpe:   <http://w3id.org/sepses/vocab/ref/cpe#> .
+@prefix cvss:  <http://w3id.org/sepses/vocab/ref/cvss#> .
+
+# ── Resource Prefixes (instance namespace) ─────────────────
+# CVE instances:   <http://w3id.org/sepses/resource/cve/CVE-YYYY-NNNN>
+# CWE instances:   <http://w3id.org/sepses/resource/cwe/CWE-N>
+# CAPEC instances: <http://w3id.org/sepses/resource/capec/CAPEC-N>
+# CPE instances:   <http://w3id.org/sepses/resource/cpe/...>
+
+# ── CVE Class & Properties ────────────────────────────────
+cve:CVE a owl:Class ;
+    rdfs:label "Common Vulnerability and Exposure" ;
+    rdfs:comment "A publicly known cybersecurity vulnerability with a unique identifier." .
+
+cve:cveId a owl:DatatypeProperty ;
+    rdfs:domain cve:CVE ;
+    rdfs:range  xsd:string ;
+    rdfs:label  "CVE Identifier" .
+
+cve:description a owl:DatatypeProperty ;
+    rdfs:domain cve:CVE ;
+    rdfs:range  xsd:string .
+
+cve:issued a owl:DatatypeProperty ;
+    rdfs:domain cve:CVE ;
+    rdfs:range  xsd:date .
+
+cve:hasCWE a owl:ObjectProperty ;
+    rdfs:domain cve:CVE ;
+    rdfs:range  cwe:CWE ;
+    rdfs:label  "has CWE weakness" .
+
+cve:hasCPE a owl:ObjectProperty ;
+    rdfs:domain cve:CVE ;
+    rdfs:range  cpe:CPE ;
+    rdfs:label  "affects platform/product" .
+
+cve:hasCVSS a owl:ObjectProperty ;
+    rdfs:domain cve:CVE ;
+    rdfs:range  cvss:BaseMetric ;
+    rdfs:label  "has CVSS metric" .
+
+# ── CWE Class & Properties ────────────────────────────────
+cwe:CWE a owl:Class ;
+    rdfs:label "Common Weakness Enumeration" ;
+    rdfs:comment "A category of software weakness that may lead to a vulnerability." .
+
+cwe:cweId a owl:DatatypeProperty ;
+    rdfs:domain cwe:CWE ;
+    rdfs:range  xsd:string .
+
+cwe:name a owl:DatatypeProperty ;
+    rdfs:domain cwe:CWE ;
+    rdfs:range  xsd:string .
+
+cwe:description a owl:DatatypeProperty ;
+    rdfs:domain cwe:CWE ;
+    rdfs:range  xsd:string .
+
+cwe:hasCAPEC a owl:ObjectProperty ;
+    rdfs:domain cwe:CWE ;
+    rdfs:range  capec:CAPEC ;
+    rdfs:label  "has attack pattern" .
+
+cwe:hasPotentialMitigation a owl:ObjectProperty ;
+    rdfs:domain cwe:CWE ;
+    rdfs:label  "has potential mitigation" .
+
+# ── CAPEC Class & Properties ──────────────────────────────
+capec:CAPEC a owl:Class ;
+    rdfs:label "Common Attack Pattern Enumeration and Classification" .
+
+capec:capecId a owl:DatatypeProperty ;
+    rdfs:domain capec:CAPEC ;
+    rdfs:range  xsd:string .
+
+capec:name a owl:DatatypeProperty ;
+    rdfs:domain capec:CAPEC ;
+    rdfs:range  xsd:string .
+
+capec:description a owl:DatatypeProperty ;
+    rdfs:domain capec:CAPEC ;
+    rdfs:range  xsd:string .
+
+capec:hasRelatedAttackPattern a owl:ObjectProperty ;
+    rdfs:domain capec:CAPEC ;
+    rdfs:range  capec:CAPEC ;
+    rdfs:label  "has child/related attack pattern" .
+
+capec:hasSkillRequired a owl:ObjectProperty ;
+    rdfs:domain capec:CAPEC .
+
+# ── CPE Class & Properties ────────────────────────────────
+cpe:CPE a owl:Class ;
+    rdfs:label "Common Platform Enumeration" ;
+    rdfs:comment "Identifies a specific hardware/software product." .
+
+cpe:productId a owl:DatatypeProperty ;
+    rdfs:domain cpe:CPE ;
+    rdfs:range  xsd:string .
+
+cpe:hasVendor a owl:ObjectProperty ;
+    rdfs:domain cpe:CPE .
+
+cpe:hasProduct a owl:ObjectProperty ;
+    rdfs:domain cpe:CPE .
+
+# ── CVSS Properties ───────────────────────────────────────
+cvss:BaseMetric a owl:Class ;
+    rdfs:label "CVSS Base Metric" .
+
+cvss:baseScore a owl:DatatypeProperty ;
+    rdfs:domain cvss:BaseMetric ;
+    rdfs:range  xsd:decimal ;
+    rdfs:label  "CVSS Base Score (0.0–10.0)" .
+
+cvss:attackVector a owl:DatatypeProperty ;
+    rdfs:domain cvss:BaseMetric ;
+    rdfs:range  xsd:string .
+
+cvss:attackComplexity a owl:DatatypeProperty ;
+    rdfs:domain cvss:BaseMetric ;
+    rdfs:range  xsd:string .
+
+cvss:privilegesRequired a owl:DatatypeProperty ;
+    rdfs:domain cvss:BaseMetric ;
+    rdfs:range  xsd:string .
+
+cvss:confidentialityImpact a owl:DatatypeProperty ;
+    rdfs:domain cvss:BaseMetric ;
+    rdfs:range  xsd:string .
+
+cvss:integrityImpact a owl:DatatypeProperty ;
+    rdfs:domain cvss:BaseMetric ;
+    rdfs:range  xsd:string .
+
+cvss:availabilityImpact a owl:DatatypeProperty ;
+    rdfs:domain cvss:BaseMetric ;
+    rdfs:range  xsd:string .
