@@ -1,4 +1,4 @@
-﻿# Local Data & Vector Databases
+# Local Data & Vector Databases
 data/raw_logs/*
 data/chroma_db/*
 !data/cskg_dumps/
@@ -19,3 +19,10 @@ Thumbs.db
 # Java/Maven build output
 target/
 *.jar
+
+# pyvis static assets (generated at runtime, tidak perlu di-commit)
+lib/
+
+# Evaluation auto-generated results
+evaluation/results/*.json
+evaluation/results/*.csv
