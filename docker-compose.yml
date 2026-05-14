@@ -1,0 +1,82 @@
+version: '3.9'
+
+# ============================================================
+# SEPSES CSKG LLM Chatbot - Docker Compose
+# ============================================================
+# Services:
+#   fuseki  : Apache Jena Fuseki (SPARQL triplestore lokal)
+#   ollama  : Ollama untuk Mistral-7B lokal
+#   chatbot : Streamlit application
+#
+# Penggunaan:
+#   docker compose up fuseki ollama   # Hanya infrastruktur
+#   docker compose up                 # Semua services
+# ============================================================
+
+services:
+
+  # ---- Apache Jena Fuseki (SPARQL Triplestore) ----
+  fuseki:
+    image: stain/jena-fuseki:4.9.0
+    container_name: sepses_fuseki
+    ports:
+      - "3030:3030"
+    volumes:
+      - fuseki_data:/fuseki
+    environment:
+      - ADMIN_PASSWORD=${FUSEKI_ADMIN_PASSWORD:-admin123}
+      - JVM_ARGS=-Xmx2g
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3030/$/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ---- Ollama (Local LLM Server) ----
+  ollama:
+    image: ollama/ollama:latest
+    container_name: sepses_ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    restart: unless-stopped
+    # GPU support (uncomment jika ada NVIDIA GPU):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu]
+
+  # ---- Streamlit Chatbot Application ----
+  chatbot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sepses_chatbot
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      - SPARQL_ENDPOINT=http://fuseki:3030/sepses/sparql
+      - FUSEKI_ENDPOINT=http://fuseki:3030/sepses/sparql
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - CHROMA_DB_PATH=/app/data/chroma_db
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      fuseki:
+        condition: service_healthy
+      ollama:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  fuseki_data:
+    driver: local
+  ollama_data:
+    driver: local
