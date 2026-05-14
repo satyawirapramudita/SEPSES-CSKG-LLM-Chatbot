@@ -1,0 +1,21 @@
+﻿# Local Data & Vector Databases
+data/raw_logs/*
+data/chroma_db/*
+!data/cskg_dumps/
+
+# Python Environments & Cache
+__pycache__/
+*.py[cod]
+$py.class
+.venv/
+venv/
+env/
+.env
+
+# OS Generated Files
+.DS_Store
+Thumbs.db
+
+# Java/Maven build output
+target/
+*.jar
