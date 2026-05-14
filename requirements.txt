@@ -1,0 +1,55 @@
+# ============================================================
+# SEPSES CSKG LLM Chatbot - Python Dependencies
+# IEEE 830 / ISO/IEC 12207 Compliant Project
+# ============================================================
+
+# ---- Core Framework ----
+streamlit==1.35.0
+python-dotenv==1.0.1
+
+# ---- LLM Providers ----
+openai==1.30.5
+langchain==0.2.5
+langchain-openai==0.1.8
+langchain-community==0.2.5
+llama-index==0.10.50
+llama-index-llms-ollama==0.1.5
+ollama==0.2.1
+
+# ---- Knowledge Graph & SPARQL ----
+SPARQLWrapper==2.0.0
+rdflib==7.0.0
+
+# ---- Vector Database & Embeddings ----
+chromadb==0.5.0
+sentence-transformers==3.0.1
+rank-bm25==0.2.2
+
+# ---- Graph Visualization ----
+pyvis==0.3.2
+networkx==3.3
+
+# ---- Evaluation Framework ----
+ragas==0.1.10
+datasets==2.20.0
+
+# ---- Data Processing ----
+pandas==2.2.2
+numpy==1.26.4
+tqdm==4.66.4
+
+# ---- Visualization (Evaluation Dashboard) ----
+plotly==5.22.0
+matplotlib==3.9.0
+
+# ---- Security & Validation ----
+pydantic==2.7.4
+validators==0.28.3
+
+# ---- Testing ----
+pytest==8.2.2
+pytest-asyncio==0.23.7
+pytest-cov==5.0.0
+
+# ---- Logging ----
+structlog==24.2.0

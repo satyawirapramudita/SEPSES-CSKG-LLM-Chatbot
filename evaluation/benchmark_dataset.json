@@ -1,0 +1,289 @@
+"""
+SEPSES CSKG LLM Chatbot - Benchmark Dataset
+============================================
+Tanggung Jawab  : Satya Wira Pramudita (Evaluator & Log Dev)
+Branch          : feature/eval-log-dev
+
+Format setiap item:
+{
+    "id"              : ID unik pertanyaan,
+    "category"        : "security_analysis" | "log_analysis" | "kg_qa",
+    "question"        : Pertanyaan dalam natural language,
+    "expected_answer" : Jawaban referensi (ground truth),
+    "ground_truth_sparql" : SPARQL query yang harus menghasilkan jawaban (null jika log_analysis),
+    "difficulty"      : "easy" | "medium" | "hard",
+    "notes"           : Catatan evaluator
+}
+"""
+[
+  {
+    "id": "SA-001",
+    "category": "security_analysis",
+    "question": "What are the attack patterns (CAPEC) associated with CVE-2021-44228 (Log4Shell)?",
+    "expected_answer": "CVE-2021-44228 is linked to CWE-917 (Improper Neutralization of Special Elements) which maps to CAPEC-88 (OS Command Injection via HTTP Query Strings) and CAPEC-209 (XSS Using MIME Type Mismatch). The vulnerability allows remote code execution through JNDI injection in Apache Log4j.",
+    "ground_truth_sparql": "PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> PREFIX cwe: <http://w3id.org/sepses/vocab/ref/cwe#> SELECT ?capec ?capecName WHERE { <http://w3id.org/sepses/resource/cve/CVE-2021-44228> cve:hasCWE ?cwe. ?cwe cwe:hasCAPEC ?capec. ?capec cwe:name ?capecName. }",
+    "difficulty": "medium",
+    "notes": "Tests CVE -> CWE -> CAPEC multi-hop traversal"
+  },
+  {
+    "id": "SA-002",
+    "category": "security_analysis",
+    "question": "What is the CVSS v3 base score of CVE-2017-0144 (EternalBlue) and what does it affect?",
+    "expected_answer": "CVE-2017-0144 has a CVSS v3 base score of 8.1 (HIGH). It affects Microsoft Windows SMBv1 and was exploited by the WannaCry ransomware. The vulnerability allows remote code execution via a specially crafted message sent to the Microsoft Server Message Block 1.0 server.",
+    "ground_truth_sparql": "PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> PREFIX cvss: <http://w3id.org/sepses/vocab/ref/cvss#> SELECT ?score ?desc WHERE { <http://w3id.org/sepses/resource/cve/CVE-2017-0144> cve:hasCVSS ?cvssNode; cve:description ?desc. ?cvssNode cvss:baseScore ?score. }",
+    "difficulty": "easy",
+    "notes": "Tests basic CVE attribute retrieval"
+  },
+  {
+    "id": "SA-003",
+    "category": "security_analysis",
+    "question": "Which vulnerabilities in Apache HTTP Server have a CVSS score above 9.0?",
+    "expected_answer": "Several high-severity Apache HTTP Server vulnerabilities have CVSS scores above 9.0, including CVE-2021-41773 (Path Traversal, CVSS 9.8) and CVE-2021-42013 (Remote Code Execution, CVSS 9.8). These affect Apache HTTP Server versions 2.4.49 and 2.4.50.",
+    "ground_truth_sparql": "PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> PREFIX cvss: <http://w3id.org/sepses/vocab/ref/cvss#> PREFIX cpe: <http://w3id.org/sepses/vocab/ref/cpe#> SELECT ?cveId ?score WHERE { ?cve cve:cveId ?cveId; cve:hasCVSS ?cvssNode; cve:hasCPE ?cpe. ?cpe cpe:hasProduct ?product. FILTER(CONTAINS(LCASE(STR(?product)), 'apache')) ?cvssNode cvss:baseScore ?score. FILTER(?score > 9.0) }",
+    "difficulty": "hard",
+    "notes": "Tests filtering + product linkage"
+  },
+  {
+    "id": "SA-004",
+    "category": "security_analysis",
+    "question": "Describe the threat actor techniques used in supply chain attacks based on MITRE ATT&CK.",
+    "expected_answer": "Supply chain attacks involve techniques such as T1195 (Supply Chain Compromise), T1554 (Compromise Client Software Binary), and T1072 (Software Deployment Tools). Threat actors like APT41 and UNC2452 (SolarWinds attackers) leverage these techniques to insert malicious code into trusted software updates.",
+    "ground_truth_sparql": null,
+    "difficulty": "hard",
+    "notes": "Tests ATT&CK integration and threat actor analysis; requires KG to have ATT&CK data"
+  },
+  {
+    "id": "SA-005",
+    "category": "security_analysis",
+    "question": "What are the potential mitigations for CWE-89 (SQL Injection)?",
+    "expected_answer": "CWE-89 mitigations include: (1) Use parameterized queries/prepared statements, (2) Input validation and allowlisting, (3) Apply principle of least privilege to database accounts, (4) Use stored procedures, (5) Employ Web Application Firewalls (WAF). These map to OWASP prevention strategies A03:2021.",
+    "ground_truth_sparql": "PREFIX cwe: <http://w3id.org/sepses/vocab/ref/cwe#> SELECT ?mitigation WHERE { <http://w3id.org/sepses/resource/cwe/CWE-89> cwe:hasPotentialMitigation ?mitigationNode. ?mitigationNode cwe:description ?mitigation. }",
+    "difficulty": "easy",
+    "notes": "Tests CWE mitigation retrieval"
+  },
+  {
+    "id": "SA-006",
+    "category": "security_analysis",
+    "question": "What is the relationship between CVE-2014-0160 (Heartbleed) and its associated CWE and CAPEC?",
+    "expected_answer": "CVE-2014-0160 (Heartbleed) is associated with CWE-125 (Out-of-bounds Read) and CWE-126 (Buffer Over-read). The related CAPEC is CAPEC-540 (Overread Buffers). It affects OpenSSL and allows attackers to read sensitive memory including private keys, passwords, and session tokens.",
+    "ground_truth_sparql": "PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> SELECT ?cwe ?capec WHERE { <http://w3id.org/sepses/resource/cve/CVE-2014-0160> cve:hasCWE ?cwe. OPTIONAL { ?cwe cwe:hasCAPEC ?capec. } }",
+    "difficulty": "medium",
+    "notes": "Tests famous CVE multi-hop"
+  },
+  {
+    "id": "SA-007",
+    "category": "security_analysis",
+    "question": "Which CVEs published in 2023 have both a critical CVSS score and are related to memory corruption weaknesses?",
+    "expected_answer": "Recent critical memory corruption CVEs include CVE-2023-27997 (Fortinet SSL-VPN, CVSS 9.8, heap buffer overflow), CVE-2023-20198 (Cisco IOS XE, CVSS 10.0, privilege escalation). These are linked to CWE-787 (Out-of-bounds Write) and CWE-119 (Buffer Errors).",
+    "ground_truth_sparql": "PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> PREFIX cvss: <http://w3id.org/sepses/vocab/ref/cvss#> SELECT ?cveId ?score WHERE { ?cve cve:cveId ?cveId; cve:issued ?issued; cve:hasCVSS ?cvssNode; cve:hasCWE ?cwe. FILTER(STRSTARTS(STR(?issued), '2023')) ?cvssNode cvss:baseScore ?score. FILTER(?score >= 9.0) }",
+    "difficulty": "hard",
+    "notes": "Tests date filtering + multi-condition query"
+  },
+  {
+    "id": "SA-008",
+    "category": "security_analysis",
+    "question": "What products are affected by CWE-22 (Path Traversal) based on linked CVEs?",
+    "expected_answer": "CWE-22 affects products including Apache HTTP Server (CVE-2021-41773), Nginx, Zipkin, and various web application frameworks. Path traversal allows attackers to access files outside the web root directory.",
+    "ground_truth_sparql": "PREFIX cwe: <http://w3id.org/sepses/vocab/ref/cwe#> PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> SELECT DISTINCT ?product WHERE { ?cve cve:hasCWE <http://w3id.org/sepses/resource/cwe/CWE-22>; cve:hasCPE ?cpe. ?cpe cpe:hasProduct ?productNode. ?productNode cpe:productName ?product. }",
+    "difficulty": "hard",
+    "notes": "Tests reverse CWE->CVE->CPE traversal"
+  },
+  {
+    "id": "SA-009",
+    "category": "security_analysis",
+    "question": "Explain the malware Mirai and what CVEs or techniques it exploits.",
+    "expected_answer": "Mirai is an IoT botnet malware that exploits default credentials and vulnerabilities in IoT devices. It uses CVE-2017-17215 (Huawei router RCE) and CVE-2014-8361 (Realtek SDK vulnerability) to propagate. Techniques include CAPEC-70 (Try Common Usernames/Passwords) and CAPEC-128 (Fuzzing).",
+    "ground_truth_sparql": null,
+    "difficulty": "medium",
+    "notes": "Tests malware investigation scenario; may require ATT&CK data"
+  },
+  {
+    "id": "SA-010",
+    "category": "security_analysis",
+    "question": "What are the top 5 most exploited CVEs according to CVSS score in the SEPSES KG?",
+    "expected_answer": "Based on CVSS scoring, the top critical vulnerabilities include: CVE-2022-0847 (Dirty Pipe, CVSS 7.8), CVE-2021-44228 (Log4Shell, CVSS 10.0), CVE-2021-34527 (PrintNightmare, CVSS 8.8), CVE-2020-1472 (Zerologon, CVSS 10.0), CVE-2019-19781 (Citrix ADC, CVSS 9.8).",
+    "ground_truth_sparql": "PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> PREFIX cvss: <http://w3id.org/sepses/vocab/ref/cvss#> SELECT ?cveId ?score WHERE { ?cve cve:cveId ?cveId; cve:hasCVSS ?cvssNode. ?cvssNode cvss:baseScore ?score. } ORDER BY DESC(?score) LIMIT 5",
+    "difficulty": "easy",
+    "notes": "Tests top-N SPARQL query"
+  },
+  {
+    "id": "LOG-001",
+    "category": "log_analysis",
+    "question": "Identify suspicious activities in the following Snort alert: '06/24-11:32:15.123456 [**] [1:1000001:1] SQL Injection Attempt [**] [Priority: 1] {TCP} 192.168.1.100:54321 -> 10.0.0.5:3306'",
+    "expected_answer": "This Snort alert indicates a SQL injection attempt (Priority 1 - Critical). Source IP 192.168.1.100 is targeting the database server at 10.0.0.5 on port 3306 (MySQL). This corresponds to CWE-89 and CAPEC-66. Recommended actions: block source IP, review MySQL logs, check for successful queries.",
+    "ground_truth_sparql": null,
+    "difficulty": "medium",
+    "notes": "Tests Snort log parsing + KG enrichment"
+  },
+  {
+    "id": "LOG-002",
+    "category": "log_analysis",
+    "question": "What patterns indicate a brute force attack in the provided syslog entries?",
+    "expected_answer": "Brute force indicators in syslog: multiple 'Failed password' entries from the same source IP within short timeframes, typically >5 failures per minute. This corresponds to CAPEC-49 (Password Brute Forcing) and may indicate automated tooling like Hydra or Medusa.",
+    "ground_truth_sparql": null,
+    "difficulty": "easy",
+    "notes": "Tests log pattern recognition"
+  },
+  {
+    "id": "LOG-003",
+    "category": "log_analysis",
+    "question": "Analyze this Windows Event Log entry: 'EventID 4625 - An account failed to log on. Account Name: administrator. Failure Reason: Unknown username or bad password. Source Network Address: 203.0.113.42'",
+    "expected_answer": "Windows Event ID 4625 indicates failed logon attempt. The external IP 203.0.113.42 attempting to log in as 'administrator' is a classic brute force indicator. Recommended: block IP, enable account lockout policy, review Event 4740 for lockouts. CAPEC-49 applies.",
+    "ground_truth_sparql": null,
+    "difficulty": "easy",
+    "notes": "Tests Windows Event Log parsing"
+  },
+  {
+    "id": "LOG-004",
+    "category": "log_analysis",
+    "question": "The log contains 'CVE-2021-44228' in a Snort alert message. What additional context from the SEPSES KG can help analyze this alert?",
+    "expected_answer": "From SEPSES KG: CVE-2021-44228 affects Apache Log4j 2.0-2.14.1, has CVSS 10.0, is linked to CWE-917 (Expression Language Injection), and maps to CAPEC-88. Attacker can achieve RCE via JNDI LDAP requests. Immediate action: patch Log4j, block outbound LDAP on port 389.",
+    "ground_truth_sparql": null,
+    "difficulty": "medium",
+    "notes": "Tests KG enrichment of log analysis"
+  },
+  {
+    "id": "LOG-005",
+    "category": "log_analysis",
+    "question": "Classify the severity and recommend response actions for: 'Apache access log: 203.0.113.10 - - [24/Jun/2024:11:32:15 +0000] \"GET /../../../etc/passwd HTTP/1.1\" 404 0'",
+    "expected_answer": "Severity: HIGH. This is a path traversal attempt (CWE-22, CAPEC-126) targeting /etc/passwd. The 404 response suggests it failed, but indicates active reconnaissance. Recommendations: (1) Review WAF rules for path traversal, (2) Block IP 203.0.113.10, (3) Check for successful 200 responses with similar patterns.",
+    "ground_truth_sparql": null,
+    "difficulty": "medium",
+    "notes": "Tests Apache log analysis + threat classification"
+  },
+  {
+    "id": "LOG-006",
+    "category": "log_analysis",
+    "question": "What is the threat level of logs showing repeated requests to /wp-admin/xmlrpc.php from the same IP?",
+    "expected_answer": "Repeated requests to /wp-admin/xmlrpc.php indicate WordPress brute force or XML-RPC amplification attack. Threat level: HIGH. This may exploit CVE-2020-28032 or older WordPress vulnerabilities. Related CAPEC-49 (Password Brute Forcing). Recommended: disable xmlrpc.php, implement rate limiting.",
+    "ground_truth_sparql": null,
+    "difficulty": "medium",
+    "notes": "Tests web attack pattern recognition"
+  },
+  {
+    "id": "LOG-007",
+    "category": "log_analysis",
+    "question": "Summarize the top 3 threats found in a security log containing mixed Snort alerts and syslog entries.",
+    "expected_answer": "Based on log analysis, the top 3 threats are: (1) SQL Injection attempts against MySQL server - Critical priority, (2) SSH brute force from external IP ranges - High priority with 50+ failed attempts, (3) Port scanning activity against internal network - Medium priority indicating reconnaissance phase.",
+    "ground_truth_sparql": null,
+    "difficulty": "hard",
+    "notes": "Tests multi-source log aggregation"
+  },
+  {
+    "id": "LOG-008",
+    "category": "log_analysis",
+    "question": "Identify the attack stage (using MITRE ATT&CK kill chain) for a log showing: outbound connection from internal host to external IP on port 4444.",
+    "expected_answer": "Port 4444 is commonly used by Metasploit reverse shells. This log indicates Command & Control (C2) stage (MITRE ATT&CK TA0011). The internal host may be compromised. Technique T1095 (Non-Application Layer Protocol) or T1071 (Application Layer Protocol). Immediate isolation recommended.",
+    "ground_truth_sparql": null,
+    "difficulty": "hard",
+    "notes": "Tests ATT&CK kill chain mapping"
+  },
+  {
+    "id": "LOG-009",
+    "category": "log_analysis",
+    "question": "What does a high volume of DNS queries to uncommon TLDs (e.g., .xyz, .top) from an internal host indicate?",
+    "expected_answer": "High-volume DNS queries to uncommon TLDs suggest DNS tunneling (MITRE T1071.004) or C2 communication via DNS. This technique is used by malware families like DNSCat2 and Cobalt Strike. Recommended: analyze DNS logs, implement DNS filtering, check for data exfiltration patterns.",
+    "ground_truth_sparql": null,
+    "difficulty": "medium",
+    "notes": "Tests C2 detection scenario"
+  },
+  {
+    "id": "LOG-010",
+    "category": "log_analysis",
+    "question": "How should a security analyst respond to a log entry showing a failed authentication followed immediately by a successful one from the same IP?",
+    "expected_answer": "This pattern suggests a successful brute force attack. Steps: (1) Immediately revoke the active session, (2) Force password reset for the compromised account, (3) Block the source IP, (4) Review all actions taken post-authentication in audit logs (MITRE T1078 - Valid Accounts), (5) Escalate to incident response team.",
+    "ground_truth_sparql": null,
+    "difficulty": "easy",
+    "notes": "Tests incident response recommendation"
+  },
+  {
+    "id": "KG-001",
+    "category": "kg_qa",
+    "question": "Which CVEs are linked to CWE-79 (Cross-Site Scripting) in the SEPSES Knowledge Graph?",
+    "expected_answer": "SEPSES KG links numerous CVEs to CWE-79, including CVE-2021-25646 (Apache Druid XSS), CVE-2022-21661 (WordPress XSS), and many others. CWE-79 is one of the most prevalent weaknesses and maps to CAPEC-86 (XSS Using HTTP Query Strings).",
+    "ground_truth_sparql": "PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> SELECT ?cveId WHERE { ?cve cve:cveId ?cveId; cve:hasCWE <http://w3id.org/sepses/resource/cwe/CWE-79>. } LIMIT 10",
+    "difficulty": "easy",
+    "notes": "Tests direct CWE->CVE reverse lookup"
+  },
+  {
+    "id": "KG-002",
+    "category": "kg_qa",
+    "question": "How many total CVE entries are currently in the SEPSES Knowledge Graph?",
+    "expected_answer": "The SEPSES KG contains over 200,000 CVE entries as of its latest update, continuously growing as new vulnerabilities are disclosed and integrated from NVD feeds.",
+    "ground_truth_sparql": "PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> SELECT (COUNT(?cve) AS ?count) WHERE { ?cve a cve:CVE. }",
+    "difficulty": "easy",
+    "notes": "Tests COUNT aggregation"
+  },
+  {
+    "id": "KG-003",
+    "category": "kg_qa",
+    "question": "What are the vocabularies used by SEPSES CSKG and what standard do they cover?",
+    "expected_answer": "SEPSES CSKG uses 5 vocabularies: (1) cve: covering CVE + NVD data, (2) cwe: Common Weakness Enumeration, (3) capec: Common Attack Pattern Enumeration, (4) cpe: Common Platform Enumeration (product naming), (5) cvss: Common Vulnerability Scoring System v2 and v3.",
+    "ground_truth_sparql": null,
+    "difficulty": "easy",
+    "notes": "Tests factual KG metadata question"
+  },
+  {
+    "id": "KG-004",
+    "category": "kg_qa",
+    "question": "What is the SPARQL query to find all CVEs affecting Microsoft Windows 10?",
+    "expected_answer": "The SPARQL query uses cve:hasCPE linking to cpe:hasProduct with a FILTER on the product name containing 'windows_10'. This traverses CVE -> CPE -> Product relationships in the SEPSES ontology.",
+    "ground_truth_sparql": "PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> PREFIX cpe: <http://w3id.org/sepses/vocab/ref/cpe#> SELECT ?cveId WHERE { ?cve cve:cveId ?cveId; cve:hasCPE ?cpe. ?cpe cpe:productId ?product. FILTER(CONTAINS(LCASE(STR(?product)), 'windows_10')) } LIMIT 20",
+    "difficulty": "medium",
+    "notes": "Tests NL2SPARQL capability"
+  },
+  {
+    "id": "KG-005",
+    "category": "kg_qa",
+    "question": "Explain the relationship between CAPEC-62 and its parent/child attack patterns in the SEPSES KG hierarchy.",
+    "expected_answer": "CAPEC-62 (Cross Site Request Forgery) is a child of CAPEC-111 (JSON Hijacking). In the SEPSES KG, attack patterns are linked via cwe:hasRelatedWeakness and capec-specific hierarchy properties. Parent patterns represent broader attack categories while children are more specific instantiations.",
+    "ground_truth_sparql": "PREFIX capec: <http://w3id.org/sepses/vocab/ref/capec#> SELECT ?related WHERE { <http://w3id.org/sepses/resource/capec/CAPEC-62> capec:hasRelatedAttackPattern ?related. }",
+    "difficulty": "medium",
+    "notes": "Tests CAPEC hierarchy traversal"
+  },
+  {
+    "id": "KG-006",
+    "category": "kg_qa",
+    "question": "What is the difference between CWE and CAPEC in the context of SEPSES CSKG?",
+    "expected_answer": "In SEPSES CSKG: CWE (Common Weakness Enumeration) describes software weaknesses/flaws in code (e.g., buffer overflow, SQL injection). CAPEC (Common Attack Pattern Enumeration and Classification) describes attack methods used to exploit those weaknesses. A CVE links to CWE (the flaw) which then links to CAPEC (how it's exploited), forming a CVE->CWE->CAPEC chain.",
+    "ground_truth_sparql": null,
+    "difficulty": "easy",
+    "notes": "Tests conceptual understanding of KG schema"
+  },
+  {
+    "id": "KG-007",
+    "category": "kg_qa",
+    "question": "How does SEPSES KG link CVE data to CPE (affected products)?",
+    "expected_answer": "SEPSES KG uses the cve:hasCPE property to link CVE instances to CPE (Common Platform Enumeration) instances. Each CPE node references a specific product via cpe:hasProduct and cpe:hasVendor. This enables querying which products are affected by a given CVE and vice versa.",
+    "ground_truth_sparql": "PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> DESCRIBE <http://w3id.org/sepses/resource/cve/CVE-2021-44228>",
+    "difficulty": "easy",
+    "notes": "Tests schema understanding question"
+  },
+  {
+    "id": "KG-008",
+    "category": "kg_qa",
+    "question": "List all CAPEC attack patterns that require 'Low' skill level according to the SEPSES KG.",
+    "expected_answer": "The SEPSES KG includes CAPEC entries with skill requirements. Low-skill patterns include CAPEC-49 (Password Brute Forcing), CAPEC-194 (Fake the Source of Data), and CAPEC-212 (Functionality Misuse). These are accessible to less sophisticated attackers.",
+    "ground_truth_sparql": "PREFIX capec: <http://w3id.org/sepses/vocab/ref/capec#> SELECT ?capecId ?name WHERE { ?capec capec:id ?capecId; capec:name ?name; capec:hasSkillRequired ?skill. ?skill capec:level 'Low'. }",
+    "difficulty": "medium",
+    "notes": "Tests CAPEC attribute filtering"
+  },
+  {
+    "id": "KG-009",
+    "category": "kg_qa",
+    "question": "What is the CVSS v3 attack vector classification of CVE-2019-11477 (SACK Panic)?",
+    "expected_answer": "CVE-2019-11477 (SACK Panic) has CVSS v3 Attack Vector: NETWORK, which means it's remotely exploitable without requiring local access. It affects the Linux kernel TCP implementation and can cause denial of service.",
+    "ground_truth_sparql": "PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> PREFIX cvss: <http://w3id.org/sepses/vocab/ref/cvss#> SELECT ?attackVector ?score WHERE { <http://w3id.org/sepses/resource/cve/CVE-2019-11477> cve:hasCVSS ?cvssNode. ?cvssNode cvss:attackVector ?attackVector; cvss:baseScore ?score. }",
+    "difficulty": "medium",
+    "notes": "Tests CVSS attribute retrieval"
+  },
+  {
+    "id": "KG-010",
+    "category": "kg_qa",
+    "question": "Using SEPSES KG, find the CVE with the highest CVSS score that affects Oracle products.",
+    "expected_answer": "Oracle products are affected by numerous critical CVEs. Candidates with CVSS 10.0 include CVE-2021-22005 (vCenter) and various Oracle WebLogic vulnerabilities. The query traverses CVE->CPE->Vendor filtering for Oracle.",
+    "ground_truth_sparql": "PREFIX cve: <http://w3id.org/sepses/vocab/ref/cve#> PREFIX cpe: <http://w3id.org/sepses/vocab/ref/cpe#> PREFIX cvss: <http://w3id.org/sepses/vocab/ref/cvss#> SELECT ?cveId ?score WHERE { ?cve cve:cveId ?cveId; cve:hasCVSS ?cvssNode; cve:hasCPE ?cpe. ?cpe cpe:hasVendor ?vendor. FILTER(CONTAINS(LCASE(STR(?vendor)), 'oracle')) ?cvssNode cvss:baseScore ?score. } ORDER BY DESC(?score) LIMIT 1",
+    "difficulty": "hard",
+    "notes": "Tests vendor-filtered max score query"
+  }
+]

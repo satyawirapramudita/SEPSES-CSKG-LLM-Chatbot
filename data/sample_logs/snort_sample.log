@@ -1,0 +1,17 @@
+# Sample Snort Alert Log - SEPSES CSKG LLM Chatbot Demo
+# Source: Based on MACCDC 2012 dataset format (referenced in SEPSES paper)
+# Format: Snort IDS Alert Log
+
+06/24-09:12:33.456789 [**] [1:1000001:1] SQL Injection Attempt [**] [Priority: 1] [Classification: Web Application Attack] {TCP} 192.168.100.50:54321 -> 10.0.0.10:3306
+06/24-09:12:34.123456 [**] [1:1000002:2] XSS Attack Detected [**] [Priority: 2] [Classification: Web Application Attack] {TCP} 192.168.100.51:45678 -> 10.0.0.10:80
+06/24-09:13:01.789012 [**] [1:1000003:1] CVE-2021-44228 Log4Shell Exploit Attempt [**] [Priority: 1] [Classification: Attempted User Privilege Gain] {TCP} 203.0.113.42:12345 -> 10.0.0.15:8080
+06/24-09:14:15.234567 [**] [1:2013028:7] ET POLICY Suspicious inbound to MSSQL port 1433 [**] [Priority: 2] {TCP} 198.51.100.7:49152 -> 10.0.0.20:1433
+06/24-09:15:22.890123 [**] [1:1000004:1] Port Scan Detected - SYN Flood [**] [Priority: 3] [Classification: Attempted Information Leak] {TCP} 203.0.113.100:0 -> 10.0.0.0/24:22
+06/24-09:16:45.345678 [**] [1:1000005:1] CVE-2017-0144 EternalBlue SMB Exploit [**] [Priority: 1] [Classification: Attempted Administrator Privilege Gain] {TCP} 203.0.113.55:65535 -> 10.0.0.5:445
+06/24-09:18:00.567890 [**] [1:1000006:3] Brute Force SSH Login Attempt [**] [Priority: 2] [Classification: Attempted Administrator Privilege Gain] {TCP} 198.51.100.22:34567 -> 10.0.0.1:22
+06/24-09:18:01.123456 [**] [1:1000006:3] Brute Force SSH Login Attempt [**] [Priority: 2] [Classification: Attempted Administrator Privilege Gain] {TCP} 198.51.100.22:34568 -> 10.0.0.1:22
+06/24-09:18:02.234567 [**] [1:1000006:3] Brute Force SSH Login Attempt [**] [Priority: 2] [Classification: Attempted Administrator Privilege Gain] {TCP} 198.51.100.22:34569 -> 10.0.0.1:22
+06/24-09:19:33.789012 [**] [1:1000007:1] DNS Tunneling Suspected High Volume Queries [**] [Priority: 2] [Classification: Potentially Bad Traffic] {UDP} 10.0.0.30:53421 -> 8.8.8.8:53
+06/24-09:20:15.456789 [**] [1:1000008:2] CVE-2014-0160 Heartbleed SSL Attack [**] [Priority: 1] [Classification: Attempted Information Leak] {TCP} 203.0.113.77:55123 -> 10.0.0.8:443
+06/24-09:22:44.890123 [**] [1:1000009:1] Path Traversal Attack Detected [**] [Priority: 2] [Classification: Web Application Attack] {TCP} 198.51.100.88:38765 -> 10.0.0.10:80
+06/24-09:24:00.123456 [**] [1:1000010:1] Reverse Shell Activity Detected Outbound port 4444 [**] [Priority: 1] [Classification: Successful User Privilege Gain] {TCP} 10.0.0.25:52341 -> 203.0.113.200:4444
