@@ -167,8 +167,13 @@ def render_chat_page() -> None:
 
     with ctrl_col2:
         llm_label = {
-            "gpt-4o-mini": "🤖 GPT-4o-mini (OpenAI)",
-            "mistral": "🦙 Mistral-7B (Ollama)",
+            "gpt-4o-mini":        "🤖 GPT-4o-mini (OpenAI)",
+            "gemini-2.0-flash":   "✨ Gemini 2.0 Flash (Google)",
+            "gemini-1.5-flash":   "✨ Gemini 1.5 Flash (Google)",
+            "gemini-1.5-pro":     "✨ Gemini 1.5 Pro (Google)",
+            "mistral":            "🦙 Mistral-7B (Ollama)",
+            "gemma4:latest":      "🦙 Gemma4 (Ollama)",
+            "minimax-m2.7:cloud": "🦙 MiniMax (Ollama)",
         }
         current_llm = st.session_state.selected_llm
         st.markdown(
@@ -291,9 +296,14 @@ def _render_message(msg: Dict) -> None:
     else:
         # Assistant bubble
         llm_label = {
-            "gpt-4o-mini": "🤖 GPT-4o-mini",
-            "mistral": "🦙 Mistral-7B",
-        }.get(msg.get("llm", "gpt-4o-mini"), "🤖 AI")
+            "gpt-4o-mini":        "🤖 GPT-4o-mini",
+            "gemini-2.0-flash":   "✨ Gemini 2.0 Flash",
+            "gemini-1.5-flash":   "✨ Gemini 1.5 Flash",
+            "gemini-1.5-pro":     "✨ Gemini 1.5 Pro",
+            "mistral":            "🦙 Mistral-7B",
+            "gemma4:latest":      "🦙 Gemma4",
+            "minimax-m2.7:cloud": "🦙 MiniMax",
+        }.get(msg.get("llm", "gpt-4o-mini"), f"🤖 {msg.get('llm', 'AI')}")
 
         st.markdown(
             f"<div style='margin:0.5rem 0;'>"
