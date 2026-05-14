@@ -1,0 +1,23 @@
+# SPARQL Query: CVE → CWE → CAPEC Multi-Hop Chain
+# Digunakan oleh: kg_engine/sparql_client.py → get_capec_from_cve()
+
+PREFIX cve:   <http://w3id.org/sepses/vocab/ref/cve#>
+PREFIX cwe:   <http://w3id.org/sepses/vocab/ref/cwe#>
+PREFIX capec: <http://w3id.org/sepses/vocab/ref/capec#>
+PREFIX res:   <http://w3id.org/sepses/resource/cve/>
+
+SELECT DISTINCT
+    ?cweUri ?cweId ?cweName
+    ?capecUri ?capecId ?capecName ?capecDescription
+WHERE {
+    res:CVE_ID_PLACEHOLDER cve:hasCWE ?cweUri .
+    OPTIONAL { ?cweUri cwe:cweId ?cweId . }
+    OPTIONAL { ?cweUri cwe:name  ?cweName . }
+    OPTIONAL {
+        ?cweUri cwe:hasCAPEC ?capecUri .
+        OPTIONAL { ?capecUri capec:capecId    ?capecId . }
+        OPTIONAL { ?capecUri capec:name       ?capecName . }
+        OPTIONAL { ?capecUri capec:description ?capecDescription . }
+    }
+}
+ORDER BY ?cweId ?capecId

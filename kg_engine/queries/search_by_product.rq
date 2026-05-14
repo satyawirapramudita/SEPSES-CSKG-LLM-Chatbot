@@ -1,0 +1,27 @@
+# SPARQL Query: Search CVEs by Product Name
+# Digunakan oleh: kg_engine/sparql_client.py → search_vulnerabilities_by_product()
+
+PREFIX cve:  <http://w3id.org/sepses/vocab/ref/cve#>
+PREFIX cpe:  <http://w3id.org/sepses/vocab/ref/cpe#>
+PREFIX cvss: <http://w3id.org/sepses/vocab/ref/cvss#>
+
+SELECT DISTINCT
+    ?cveId
+    ?description
+    ?score
+    ?cpeProduct
+WHERE {
+    ?cve cve:cveId      ?cveId .
+    ?cve cve:hasCPE     ?cpe .
+    ?cpe cpe:productId  ?cpeProduct .
+
+    OPTIONAL { ?cve cve:description ?description . }
+    OPTIONAL {
+        ?cve cve:hasCVSS ?cvssNode .
+        ?cvssNode cvss:baseScore ?score .
+    }
+
+    FILTER(CONTAINS(LCASE(STR(?cpeProduct)), LCASE("PRODUCT_PLACEHOLDER")))
+}
+ORDER BY DESC(?score)
+LIMIT 20
