@@ -26,11 +26,12 @@ import time
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import structlog
 from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
 
@@ -188,19 +189,17 @@ class Grader:
         self._results_dir = results_dir or os.getenv(
             "EVAL_RESULTS_DIR", "./evaluation/results"
         )
-        self._judge_model = judge_model or os.getenv("JUDGE_MODEL", "gemini-2.0-flash")
+        self._judge_model = judge_model or os.getenv("JUDGE_MODEL", "gpt-4o-mini")
 
-        # Inisialisasi LLM judge menggunakan factory connector (Gemini/OpenAI/Ollama)
-        try:
-            from rag_logic.llm_connector import get_llm_connector, Message as LLMMessage
-            self._judge_connector = get_llm_connector(self._judge_model)
-            self._llm_message_cls = LLMMessage
-            logger.info("judge_connector_ready", model=self._judge_model)
-        except Exception as exc:
-            logger.warning("judge_connector_failed", error=str(exc))
-            self._judge_connector = None
-            self._llm_message_cls = None
+        # Validasi API key
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "OPENAI_API_KEY tidak ditemukan di environment variables. "
+                "Salin .env.example ke .env dan isi API key."
+            )
 
+        self._judge_client = OpenAI(api_key=api_key)
         self._benchmark: List[Dict[str, Any]] = []
 
         # Buat direktori hasil jika belum ada
@@ -246,14 +245,9 @@ class Grader:
             question=question_item["question"],
             llm_name=llm_name,
             generated_answer=generated_answer,
-            retrieved_context=retrieved_context[:2000],
+            retrieved_context=retrieved_context[:2000],  # Truncate untuk judge
             latency_ms=latency_ms,
         )
-
-        if not self._judge_connector:
-            result.error = "Judge connector tidak tersedia."
-            logger.warning("judge_skipped", q_id=result.question_id)
-            return result
 
         try:
             judge_prompt = JUDGE_USER_PROMPT_TEMPLATE.format(
@@ -263,28 +257,23 @@ class Grader:
                 retrieved_context=retrieved_context[:1500],
             )
 
-            Msg = self._llm_message_cls
-            raw_output = self._judge_connector.generate(
+            response = self._judge_client.chat.completions.create(
+                model=self._judge_model,
                 messages=[
-                    Msg("system", JUDGE_SYSTEM_PROMPT),
-                    Msg("user", judge_prompt),
+                    {"role": "system", "content": JUDGE_SYSTEM_PROMPT},
+                    {"role": "user", "content": judge_prompt},
                 ],
                 temperature=0.0,
+                response_format={"type": "json_object"},
                 max_tokens=512,
             )
 
-            # Parse JSON dari output (Gemini mungkin membungkus dengan ```json)
-            import re
-            json_match = re.search(r"\{[\s\S]+\}", raw_output)
-            if json_match:
-                judge_output = json.loads(json_match.group())
-            else:
-                raise ValueError(f"Output bukan JSON: {raw_output[:200]}")
+            judge_output = json.loads(response.choices[0].message.content)
 
-            result.faithfulness      = float(judge_output.get("faithfulness", 0.0))
-            result.answer_relevancy  = float(judge_output.get("answer_relevancy", 0.0))
+            result.faithfulness = float(judge_output.get("faithfulness", 0.0))
+            result.answer_relevancy = float(judge_output.get("answer_relevancy", 0.0))
             result.context_precision = float(judge_output.get("context_precision", 0.0))
-            result.judge_reasoning   = judge_output.get("reasoning", "")
+            result.judge_reasoning = judge_output.get("reasoning", "")
 
             logger.info(
                 "question_evaluated",

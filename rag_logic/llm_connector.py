@@ -5,13 +5,12 @@ Tanggung Jawab  : Fahmi Abdillah Zain (RAG Logic Dev)
 Branch          : feature/rag-logic
 
 Deskripsi:
-    Abstraksi koneksi ke tiga LLM backend:
+    Abstraksi koneksi ke dua LLM backend:
     1. GPT-4o-mini via OpenAI API
     2. Mistral-7B via Ollama (local)
-    3. Gemini-2.0-Flash via Google AI (BARU — gratis tier)
 
-    Menggunakan interface yang seragam: generate(messages) -> str
-    Factory: get_llm_connector("gemini-2.0-flash") -> GeminiConnector
+    Menggunakan interface yang seragam: generate(messages) → str
+    Mendukung streaming dan non-streaming mode.
 """
 
 import os
@@ -342,9 +341,8 @@ class GeminiConnector(BaseLLMConnector):
     - gemini-1.5-pro
 
     Catatan:
-    - Gemini tidak support peran "system" di messages secara langsung;
-      sistem prompt dikonversi ke pesan user pertama dengan prefix [INST].
-    - response_format JSON tidak tersedia — output teks biasa.
+    - Gemini tidak punya peran "system" terpisah; system prompt
+      digabung ke pesan user pertama sebagai [System Instructions].
     """
 
     def __init__(
@@ -359,7 +357,7 @@ class GeminiConnector(BaseLLMConnector):
 
         Raises:
             ImportError: Jika google-generativeai belum terinstall.
-            ValueError : Jika API key tidak tersedia.
+            ValueError : Jika API key belum diset.
         """
         try:
             import google.generativeai as genai
@@ -374,15 +372,20 @@ class GeminiConnector(BaseLLMConnector):
 
         if not key or "GANTI" in key:
             raise ValueError(
-                "GEMINI_API_KEY tidak ditemukan atau belum diset. "
-                "Dapatkan key gratis di: https://aistudio.google.com/app/apikey"
+                "GEMINI_API_KEY belum diset. "
+                "Dapatkan gratis di: https://aistudio.google.com/app/apikey\n"
+                "Kemudian isi di .env: GEMINI_API_KEY=AIza..."
             )
 
         genai.configure(api_key=key)
         self._genai = genai
         self._client = genai.GenerativeModel(self._model_name)
-
         logger.info("gemini_connector_init", model=self._model_name)
+
+    @property
+    def model_name(self) -> str:
+        """Nama model Gemini yang digunakan."""
+        return self._model_name
 
     def generate(
         self,
@@ -395,7 +398,7 @@ class GeminiConnector(BaseLLMConnector):
 
         Args:
             messages   : List Message (system/user/assistant).
-            temperature: Kreativitas output (0.0 = deterministik).
+            temperature: Kreativitas (0.0 = deterministik).
             max_tokens : Batas token output.
 
         Returns:
@@ -405,9 +408,7 @@ class GeminiConnector(BaseLLMConnector):
             RuntimeError: Jika API call gagal.
         """
         try:
-            # Konversi messages ke format Gemini
-            # Gemini menerima: [{"role": "user"|"model", "parts": [str]}]
-            # System prompt dimerge ke dalam pesan user pertama
+            # Pisahkan system prompt dan history
             system_content = ""
             history = []
             user_msgs = []
@@ -418,26 +419,23 @@ class GeminiConnector(BaseLLMConnector):
                 elif msg.role == "user":
                     user_msgs.append(msg.content)
                 elif msg.role == "assistant":
-                    # Flush user msgs yang pending ke history
                     if user_msgs:
-                        combined = "\n".join(user_msgs)
-                        history.append({"role": "user", "parts": [combined]})
+                        history.append({"role": "user", "parts": ["\n".join(user_msgs)]})
                         user_msgs = []
                     history.append({"role": "model", "parts": [msg.content]})
 
-            # Gabungkan system prompt + pesan user terakhir
-            final_user_parts = []
+            # Bangun pesan user akhir (system + user)
+            final_parts = []
             if system_content:
-                final_user_parts.append(f"[System Instructions]\n{system_content}\n\n")
+                final_parts.append(f"[System Instructions]\n{system_content}\n\n")
             if user_msgs:
-                final_user_parts.append("\n".join(user_msgs))
+                final_parts.append("\n".join(user_msgs))
             elif history and history[-1]["role"] == "user":
-                final_user_parts = history.pop()["parts"]
+                final_parts = history.pop()["parts"]
 
-            # Buat chat session dengan history
             chat = self._client.start_chat(history=history)
             response = chat.send_message(
-                "".join(final_user_parts),
+                "".join(final_parts),
                 generation_config=self._genai.types.GenerationConfig(
                     temperature=temperature,
                     max_output_tokens=max_tokens,
@@ -445,11 +443,7 @@ class GeminiConnector(BaseLLMConnector):
             )
 
             answer = response.text.strip()
-            logger.info(
-                "gemini_generate_success",
-                model=self._model_name,
-                output_chars=len(answer),
-            )
+            logger.info("gemini_generate_success", model=self._model_name, chars=len(answer))
             return answer
 
         except Exception as exc:
@@ -462,12 +456,7 @@ class GeminiConnector(BaseLLMConnector):
         temperature: float = 0.3,
         max_tokens: int = 2048,
     ):
-        """
-        Generate dengan pengukuran latency.
-
-        Returns:
-            Tuple[str, float]: (answer, latency_ms)
-        """
+        """Generate dengan pengukuran latency. Returns (answer, latency_ms)."""
         start = time.time()
         answer = self.generate(messages, temperature, max_tokens)
         return answer, round((time.time() - start) * 1000, 2)
@@ -490,12 +479,12 @@ def get_llm_connector(llm_name: str) -> BaseLLMConnector:
 
     Args:
         llm_name: Nama model.
-                  - OpenAI  : "gpt-4o-mini", "gpt-4o", ...
-                  - Gemini  : "gemini-2.0-flash", "gemini-1.5-pro", ...
-                  - Ollama  : "mistral", "llama3", "gemma4", ...
+                  - Gemini  : "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"
+                  - OpenAI  : "gpt-4o-mini", "gpt-4o"
+                  - Ollama  : "mistral", "llama3", "gemma4", dsb.
 
     Returns:
-        BaseLLMConnector: OpenAI / Gemini / Ollama connector.
+        BaseLLMConnector: Gemini / OpenAI / Ollama connector.
 
     Raises:
         RuntimeError: Jika backend tidak tersedia.

@@ -373,7 +373,7 @@ def _init_session_state() -> None:
         "current_page": "💬 Chat",
         # Chat
         "chat_history": [],
-        "selected_llm": os.getenv("GEMINI_MODEL", "gemini-2.0-flash"),
+        "selected_llm": "gpt-4o-mini",
         "chat_mode": "Security Analysis",
         # Log Analysis
         "ingested_logs": [],
@@ -442,28 +442,10 @@ def _render_sidebar() -> str:
             "letter-spacing:0.1em; margin-bottom:0.5rem;'>Active LLM</p>",
             unsafe_allow_html=True
         )
-        LLM_OPTIONS = [
-            "gemini-2.0-flash",
-            "gemini-1.5-flash",
-            "gpt-4o-mini",
-            "mistral",
-            "gemma4:latest",
-            "minimax-m2.7:cloud",
-        ]
-        current = st.session_state.get("selected_llm", "gemini-2.0-flash")
-        default_idx = LLM_OPTIONS.index(current) if current in LLM_OPTIONS else 0
         st.session_state.selected_llm = st.selectbox(
             label="llm_select",
-            options=LLM_OPTIONS,
-            index=default_idx,
-            format_func=lambda m: {
-                "gemini-2.0-flash":   "✨ Gemini 2.0 Flash (Google)",
-                "gemini-1.5-flash":   "✨ Gemini 1.5 Flash (Google)",
-                "gpt-4o-mini":        "🤖 GPT-4o-mini (OpenAI)",
-                "mistral":            "🦙 Mistral-7B (Ollama)",
-                "gemma4:latest":      "🦙 Gemma4 (Ollama)",
-                "minimax-m2.7:cloud": "🦙 MiniMax (Ollama)",
-            }.get(m, m),
+            options=["gpt-4o-mini", "mistral"],
+            index=0 if st.session_state.selected_llm == "gpt-4o-mini" else 1,
             label_visibility="collapsed",
         )
 
@@ -484,14 +466,10 @@ def _render_sidebar() -> str:
         )
 
         # LLM status
-        has_gemini = bool(os.getenv("GEMINI_API_KEY")) and "GANTI" not in os.getenv("GEMINI_API_KEY", "")
-        has_openai = bool(os.getenv("OPENAI_API_KEY"))
-        llm_status = "🟢" if (has_gemini or has_openai) else "🔴"
-        active_llm = st.session_state.get("selected_llm", "gemini-2.0-flash")
-        llm_short = {"gemini-2.0-flash": "Gemini", "gpt-4o-mini": "GPT-4o"}.get(active_llm, active_llm[:8])
+        llm_status = "🟢" if os.getenv("OPENAI_API_KEY") else "🔴"
         st.markdown(
             f"<div style='font-size:0.82rem; padding:0.2rem 0;'>"
-            f"{llm_status} LLM ({llm_short})</div>",
+            f"{llm_status} LLM Connector</div>",
             unsafe_allow_html=True
         )
 
@@ -605,19 +583,13 @@ def _render_settings_page() -> None:
     with col2:
         st.subheader("🔑 API Key Status")
         has_openai = bool(os.getenv("OPENAI_API_KEY"))
-        has_gemini = bool(os.getenv("GEMINI_API_KEY")) and "GANTI" not in os.getenv("GEMINI_API_KEY", "")
-
-        st.markdown(f"**Google Gemini API Key**: {'✅ Configured' if has_gemini else '❌ Not set'}")
-        if not has_gemini:
-            st.markdown(
-                "🔗 Dapatkan **gratis** di: [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)"
-            )
-
-        st.markdown(f"**OpenAI API Key**: {'✅ Configured' if has_openai else '⚠️ Quota may be exhausted'}")
-
+        st.markdown(
+            f"**OpenAI API Key**: {'✅ Configured' if has_openai else '❌ Not configured'}",
+        )
         st.info(
-            "API keys dikelola via file `.env`. Isi `GEMINI_API_KEY` untuk "
-            "menggunakan Gemini 2.0 Flash secara **gratis**. Jangan pernah commit `.env`.",
+            "API keys dikelola via file `.env`. "
+            "Salin `.env.example` → `.env` dan isi nilainya. "
+            "Jangan pernah commit `.env` ke repository.",
             icon="🔐"
         )
 
